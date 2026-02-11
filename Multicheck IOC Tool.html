@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC IOC MultiCheck Tool</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #0b3c5d 0%, #1a5490 100%);
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+h2 {
+    color: #e0f2ff;
+    margin-bottom: 25px;
+    font-size: 28px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.input-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+textarea {
+    width: 100%;
+    padding: 15px;
+    min-height: 120px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 15px;
+}
+
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1c77c3;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+button.primary {
+    background: #1c77c3;
+    flex: 1;
+}
+
+button.primary:hover {
+    background: #155a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(28, 119, 195, 0.4);
+}
+
+button.secondary {
+    background: #5a6c7d;
+}
+
+button.secondary:hover {
+    background: #4a5c6d;
+}
+
+/* Stats Dashboard */
+#stats-dashboard {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(28, 119, 195, 0.3);
+}
+
+.stats-header h3 {
+    color: #e0f2ff;
+    margin-bottom: 20px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: rgba(28, 119, 195, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid rgba(28, 119, 195, 0.4);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #1c77c3;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+}
+
+.type-breakdown {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.type-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.type-item:last-child {
+    border-bottom: none;
+}
+
+.type-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.type-name {
+    font-weight: 500;
+}
+
+.type-count {
+    background: rgba(28, 119, 195, 0.3);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.type-bar {
+    height: 6px;
+    background: rgba(28, 119, 195, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.type-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1c77c3, #155a8a);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Results */
+#results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ioc-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border-left: 4px solid #1c77c3;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ioc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ioc-value {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #e0f2ff;
+    word-break: break-all;
+}
+
+.ioc-type {
+    background: rgba(28, 119, 195, 0.3);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.source-btn {
+    padding: 8px 15px;
+    background: #1c77c3;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.source-btn:hover {
+    background: #155a8a;
+    transform: translateY(-2px);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+/* Toast */
+#toast {
+    visibility: hidden;
+    background: #222;
+    color: #fff;
+    padding: 15px 20px;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+
+#toast.show {
+    visibility: visible;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔍 SOC IOC MultiCheck Tool</h2>
+    
+    <div class="input-section">
+        <textarea id="iocInput" placeholder="Bir veya daha fazla IOC girin (her satıra bir tane)&#10;Örnekler:&#10;8.8.8.8&#10;example.com&#10;44d88612fea8a8f36de82e1278abb02f&#10;https://malicious-site.com"></textarea>
+        
+        <div class="button-group">
+            <button class="primary" onclick="analyzeIOCs()">🔎 Tümünü Analiz Et</button>
+            <button class="secondary" onclick="clearAll()">🗑️ Temizle</button>
+            <button class="secondary" onclick="copySummary()">📋 Özet Kopyala</button>
+        </div>
+    </div>
+
+    <div id="stats-dashboard" style="display: none;">
+        <div class="stats-header">
+            <h3>📊 Analiz İstatistikleri</h3>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Toplam IOC</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-unique">0</div>
+                <div class="stat-label">Benzersiz Türler</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-sources">0</div>
+                <div class="stat-label">Toplam Kaynaklar</div>
+            </div>
+        </div>
+        <div class="type-breakdown" id="type-breakdown"></div>
+    </div>
+
+    <div id="results"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// IOC Type Detection
+function detectIOCType(ioc) {
+    ioc = ioc.trim();
+    
+    if (/^[a-fA-F0-9]{32}$/.test(ioc)) return 'md5';
+    if (/^[a-fA-F0-9]{40}$/.test(ioc)) return 'sha1';
+    if (/^[a-fA-F0-9]{64}$/.test(ioc)) return 'sha256';
+    if (/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ioc)) return 'ipv4';
+    if (/^https?:\/\/.+/.test(ioc)) return 'url';
+    if (/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(ioc)) return 'domain';
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ioc)) return 'email';
+    
+    return 'unknown';
+}
+
+// Get sources for IOC type
+function getSourcesForType(type, ioc) {
+    const sources = {
+        ipv4: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/ip-address/${ioc}` },
+            { name: 'AbuseIPDB', url: `https://www.abuseipdb.com/check/${ioc}` },
+            { name: 'Shodan', url: `https://www.shodan.io/host/${ioc}` },
+            { name: 'AlienVault OTX', url: `https://otx.alienvault.com/indicator/ip/${ioc}` },
+            { name: 'Talos Intelligence', url: `https://talosintelligence.com/reputation_center/lookup?search=${ioc}` }
+        ],
+        domain: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/domain/${ioc}` },
+            { name: 'URLScan', url: `https://urlscan.io/search/#${ioc}` },
+            { name: 'AlienVault OTX', url: `https://otx.alienvault.com/indicator/domain/${ioc}` },
+            { name: 'Whois', url: `https://who.is/whois/${ioc}` },
+            { name: 'ThreatCrowd', url: `https://www.threatcrowd.org/domain.php?domain=${ioc}` }
+        ],
+        url: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/url/${btoa(ioc)}` },
+            { name: 'URLScan', url: `https://urlscan.io/search/#${encodeURIComponent(ioc)}` },
+            { name: 'URLhaus', url: `https://urlhaus.abuse.ch/browse.php?search=${encodeURIComponent(ioc)}` }
+        ],
+        md5: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/file/${ioc}` },
+            { name: 'AlienVault OTX', url: `https://otx.alienvault.com/indicator/file/${ioc}` },
+            { name: 'Hybrid Analysis', url: `https://www.hybrid-analysis.com/search?query=${ioc}` },
+            { name: 'ANY.RUN', url: `https://app.any.run/submissions/#filehash:${ioc}` }
+        ],
+        sha1: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/file/${ioc}` },
+            { name: 'AlienVault OTX', url: `https://otx.alienvault.com/indicator/file/${ioc}` },
+            { name: 'Hybrid Analysis', url: `https://www.hybrid-analysis.com/search?query=${ioc}` },
+            { name: 'ANY.RUN', url: `https://app.any.run/submissions/#filehash:${ioc}` }
+        ],
+        sha256: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/file/${ioc}` },
+            { name: 'AlienVault OTX', url: `https://otx.alienvault.com/indicator/file/${ioc}` },
+            { name: 'Hybrid Analysis', url: `https://www.hybrid-analysis.com/search?query=${ioc}` },
+            { name: 'ANY.RUN', url: `https://app.any.run/submissions/#filehash:${ioc}` }
+        ],
+        email: [
+            { name: 'Have I Been Pwned', url: `https://haveibeenpwned.com/` },
+            { name: 'EmailRep', url: `https://emailrep.io/${ioc}` },
+            { name: 'MXToolbox Blacklist', url: `https://mxtoolbox.com/SuperTool.aspx?action=blacklist:${ioc.split('@')[1]}&run=toolpage` }
+        ],
+        unknown: [
+            { name: 'VirusTotal', url: `https://www.virustotal.com/gui/search/${encodeURIComponent(ioc)}` },
+            { name: 'URLScan', url: `https://urlscan.io/search/#${encodeURIComponent(ioc)}` }
+        ]
+    };
+    
+    return sources[type] || sources.unknown;
+}
+
+function getTypeEmoji(type) {
+    const emojis = {
+        ipv4: '🌐', domain: '🔗', url: '🔗',
+        md5: '🔐', sha1: '🔐', sha256: '🔐',
+        email: '📧', unknown: '❓'
+    };
+    return emojis[type] || '❓';
+}
+
+// Main analyze function
+function analyzeIOCs() {
+    const input = document.getElementById('iocInput').value;
+    const iocs = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    if (iocs.length === 0) {
+        showToast('Lütfen en az bir IOC girin');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '';
+    
+    const analysisData = {
+        total: iocs.length,
+        byType: {},
+        totalSources: 0
+    };
+    
+    iocs.forEach((ioc, index) => {
+        const type = detectIOCType(ioc);
+        const sources = getSourcesForType(type, ioc);
+        
+        if (!analysisData.byType[type]) {
+            analysisData.byType[type] = [];
+        }
+        analysisData.byType[type].push(ioc);
+        analysisData.totalSources += sources.length;
+        
+        const card = createIOCCard(ioc, type, sources, index);
+        resultsDiv.appendChild(card);
+    });
+    
+    updateStatistics(analysisData);
+    document.getElementById('stats-dashboard').style.display = 'block';
+    
+    showToast(`${iocs.length} IOC analiz edildi`);
+}
+
+function createIOCCard(ioc, type, sources, index) {
+    const card = document.createElement('div');
+    card.className = 'ioc-card';
+    card.style.animationDelay = `${index * 0.1}s`;
+    
+    card.innerHTML = `
+        <div class="ioc-header">
+            <div class="ioc-value">${escapeHtml(ioc)}</div>
+            <div class="ioc-type">${getTypeEmoji(type)} ${type.toUpperCase()}</div>
+        </div>
+        <div class="sources">
+            ${sources.map(s => `<a href="${s.url}" target="_blank" class="source-btn">${s.name}</a>`).join('')}
+        </div>
+    `;
+    
+    return card;
+}
+
+function updateStatistics(data) {
+    document.getElementById('stat-total').textContent = data.total;
+    document.getElementById('stat-unique').textContent = Object.keys(data.byType).length;
+    document.getElementById('stat-sources').textContent = data.totalSources;
+    
+    const typeBreakdown = document.getElementById('type-breakdown');
+    typeBreakdown.innerHTML = '<div style="font-weight: 500; margin-bottom: 10px; color: #e0f2ff;">IOC Tür Dağılımı</div>';
+    
+    const maxCount = Math.max(...Object.values(data.byType).map(arr => arr.length));
+    
+    Object.entries(data.byType).forEach(([type, iocs]) => {
+        const count = iocs.length;
+        const percentage = ((count / data.total) * 100).toFixed(1);
+        const barWidth = (count / maxCount) * 100;
+        
+        const item = document.createElement('div');
+        item.className = 'type-item';
+        item.innerHTML = `
+            <div class="type-item-header">
+                <div class="type-name">${getTypeEmoji(type)} ${type.toUpperCase()}</div>
+                <div class="type-count">${count} (%${percentage})</div>
+            </div>
+            <div class="type-bar">
+                <div class="type-bar-fill" style="width: ${barWidth}%"></div>
+            </div>
+        `;
+        typeBreakdown.appendChild(item);
+    });
+}
+
+// Copy Summary
+function copySummary() {
+    const input = document.getElementById('iocInput').value;
+    const iocs = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    if (iocs.length === 0) {
+        showToast('Kopyalanacak IOC yok');
+        return;
+    }
+    
+    const now = new Date();
+    const timestamp = now.toLocaleString('tr-TR', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false 
+    });
+    
+    const iocsByType = {};
+    iocs.forEach(ioc => {
+        const type = detectIOCType(ioc);
+        if (!iocsByType[type]) {
+            iocsByType[type] = [];
+        }
+        iocsByType[type].push(ioc);
+    });
+    
+    let summary = `╔════════════════════════════════════════════════════════════════╗\n`;
+    summary += `║            IOC İNCELEME ÖZET RAPORU                       ║\n`;
+    summary += `╚════════════════════════════════════════════════════════════════╝\n\n`;
+    
+    summary += `İnceleme Detayları:\n`;
+    summary += `${'─'.repeat(64)}\n`;
+    summary += `  Zaman Damgası:   ${timestamp}\n`;
+    summary += `  Analist:         SOC Analisti\n`;
+    summary += `  Toplam IOC:      ${iocs.length}\n`;
+    summary += `  Araç Versiyonu:  Gelişmiş MultiCheck v2.0\n`;
+    summary += `\n`;
+    
+    summary += `IOC Tür Özeti:\n`;
+    summary += `${'─'.repeat(64)}\n`;
+    Object.keys(iocsByType).forEach(type => {
+        const count = iocsByType[type].length;
+        const emoji = getTypeEmoji(type);
+        summary += `  ${emoji} ${type.toUpperCase().padEnd(15)} : ${count} IOC\n`;
+    });
+    summary += `\n`;
+    
+    summary += `Detaylı Analiz:\n`;
+    summary += `${'═'.repeat(64)}\n\n`;
+    
+    iocs.forEach((ioc, index) => {
+        const type = detectIOCType(ioc);
+        const sources = getSourcesForType(type, ioc);
+        const emoji = getTypeEmoji(type);
+        
+        summary += `[${(index + 1).toString().padStart(2, '0')}] IOC: ${ioc}\n`;
+        summary += `     Tür: ${emoji} ${type.toUpperCase()}\n`;
+        summary += `     Durum: Analiz İçin Sıraya Alındı\n`;
+        summary += `     Öncelik: ${getPriorityTR(type)}\n`;
+        summary += `     \n`;
+        summary += `     Tehdit İstihbaratı Kaynakları (${sources.length}):\n`;
+        sources.forEach((source, srcIndex) => {
+            summary += `       ${srcIndex + 1}. ${source.name}\n`;
+            summary += `          ${source.url}\n`;
+        });
+        summary += `\n`;
+        summary += `     ${'─'.repeat(60)}\n\n`;
+    });
+    
+    summary += `İnceleme Notları:\n`;
+    summary += `${'─'.repeat(64)}\n`;
+    summary += `  • Tüm IOC'ler birden fazla OSINT kaynağı kullanılarak analiz edildi\n`;
+    summary += `  • Kapsamlı tehdit değerlendirmesi için her kaynağı inceleyin\n`;
+    summary += `  • Bulguları birden fazla platform üzerinde ilişkilendirin\n`;
+    summary += `  • Tüm bulguları SIEM/bilet sisteminize kaydedin\n`;
+    summary += `\n`;
+    summary += `Oluşturan: SOC IOC MultiCheck Aracı (Gelişmiş)\n`;
+    summary += `Rapor Bitiş: ${timestamp}\n`;
+    summary += `${'═'.repeat(64)}\n`;
+    
+    navigator.clipboard.writeText(summary).then(() => {
+        showToast('✅ Detaylı özet panoya kopyalandı!');
+    }).catch(() => {
+        showToast('❌ Özet kopyalanamadı');
+    });
+}
+
+function getPriorityTR(type) {
+    const priorities = {
+        'md5': 'YÜKSEK (Dosya Hash)',
+        'sha1': 'YÜKSEK (Dosya Hash)',
+        'sha256': 'YÜKSEK (Dosya Hash)',
+        'url': 'KRİTİK (Potansiyel Phishing)',
+        'ipv4': 'ORTA (Ağ Trafiği)',
+        'domain': 'ORTA (DNS Sorgusu)',
+        'email': 'DÜŞÜK (Bilgilendirme)',
+        'unknown': 'İNCELENMELİ'
+    };
+    return priorities[type] || 'BİLİNMİYOR';
+}
+
+function clearAll() {
+    document.getElementById('iocInput').value = '';
+    document.getElementById('results').innerHTML = '<div class="empty-state">Yukarıya IOC girin ve "Tümünü Analiz Et" butonuna tıklayın</div>';
+    document.getElementById('stats-dashboard').style.display = 'none';
+    showToast('Temizlendi');
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('results').innerHTML = '<div class="empty-state">Yukarıya IOC girin ve "Tümünü Analiz Et" butonuna tıklayın</div>';
+    
+    document.getElementById('iocInput').addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            analyzeIOCs();
+        }
+    });
+});
+</script>
+</body>
+</html>
